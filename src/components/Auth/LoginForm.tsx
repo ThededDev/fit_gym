@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Dumbbell } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { mockUsers, mockClientProfile, mockCoachProfile } from '../../data/mockData';
+import { apiPost } from '../../lib/api';
+import { User } from '../../types';
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -19,11 +21,8 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock authentication - in real app, this would be an API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const user = mockUsers.find(u => u.email === email);
-    if (user) {
+    try {
+      const user = await apiPost<User>('/auth/login', { email, password });
       dispatch({ type: 'SET_USER', payload: user });
       
       if (user.role === 'client') {
@@ -31,14 +30,17 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
       } else if (user.role === 'coach') {
         dispatch({ type: 'SET_COACH_PROFILE', payload: mockCoachProfile });
       }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Не удалось войти');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
-  const handleDemoLogin = (role: 'client' | 'coach') => {
-    const user = mockUsers.find(u => u.role === role);
-    if (user) {
+  const handleDemoLogin = async (role: 'client' | 'coach') => {
+    const demoUser = mockUsers.find(u => u.role === role);
+    if (demoUser) {
+      const user = await apiPost<User>('/auth/login', { email: demoUser.email, password: 'demo' });
       dispatch({ type: 'SET_USER', payload: user });
       
       if (user.role === 'client') {

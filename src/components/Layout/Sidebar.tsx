@@ -2,9 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Home, Calendar, Dumbbell, Apple, Target, TrendingUp, 
-  Users, BookOpen, MessageSquare, Settings, LogOut,
-  User, Moon, Sun
+  Home, Calendar, Dumbbell, Apple, Target,
+  Users, MessageSquare, LogOut, Moon, Sun
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -14,8 +13,6 @@ const clientNavItems = [
   { path: '/workouts', icon: Dumbbell, label: 'Тренировки' },
   { path: '/nutrition', icon: Apple, label: 'Питание' },
   { path: '/goals', icon: Target, label: 'Цели' },
-  { path: '/progress', icon: TrendingUp, label: 'Прогресс' },
-  { path: '/library', icon: BookOpen, label: 'Библиотека' },
   { path: '/messages', icon: MessageSquare, label: 'Сообщения' },
 ];
 
@@ -25,7 +22,7 @@ const coachNavItems = [
   { path: '/coach/clients', icon: Users, label: 'Подопечные' },
   { path: '/workouts', icon: Dumbbell, label: 'Тренировки' },
   { path: '/nutrition', icon: Apple, label: 'Питание' },
-  { path: '/library', icon: BookOpen, label: 'Библиотека' },
+  { path: '/goals', icon: Target, label: 'Цели' },
   { path: '/messages', icon: MessageSquare, label: 'Сообщения' },
 ];
 

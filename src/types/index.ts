@@ -4,6 +4,7 @@ export interface User {
   id: string;
   role: Role;
   email: string;
+  phone?: string;
   name: string;
   avatarUrl?: string;
   createdAt: string;
@@ -66,6 +67,7 @@ export interface ScheduledWorkout {
   id: string;
   clientId: string;
   date: string;
+  time?: string;
   templateId?: string;
   planned: WorkoutBlock[];
   status: 'planned' | 'done' | 'skipped';
@@ -147,12 +149,15 @@ export interface PlannedMeal {
 export interface Goal {
   id: string;
   clientId: string;
+  createdBy: 'client' | 'coach';
   type: 'weight' | 'strength' | 'habit' | 'measure';
   targetValue?: number;
+  startValue?: number;
   currentValue?: number;
   unit?: 'kg' | 'cm' | 'reps' | 'times';
   deadline?: string;
   note?: string;
+  createdAt: string;
   status: 'active' | 'achieved' | 'failed';
 }
 
@@ -181,7 +186,7 @@ export interface Notification {
   id: string;
   userId: string;
   type: 'reminder' | 'comment' | 'plan_update';
-  payload: any;
+  payload: unknown;
   read: boolean;
   createdAt: string;
 }

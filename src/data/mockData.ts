@@ -1,19 +1,45 @@
 import { User, ClientProfile, CoachProfile, Exercise, WorkoutTemplate, ScheduledWorkout, FoodItem, MealEntry, Goal, ProgressMetric, Comment } from '../types';
+import { addDays, format, startOfWeek } from 'date-fns';
+
+const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+const getCurrentWeekDate = (dayOffset: number) => format(addDays(currentWeekStart, dayOffset), 'yyyy-MM-dd');
 
 export const mockUsers: User[] = [
   {
     id: 'client-1',
     role: 'client',
     email: 'ivan@example.com',
+    phone: '+7 916 420-18-34',
     name: 'Иван Петров',
     avatarUrl: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150',
     createdAt: '2024-01-15T00:00:00Z',
     locale: 'ru'
   },
   {
+    id: 'client-2',
+    role: 'client',
+    email: 'anna@example.com',
+    phone: '+7 903 118-42-07',
+    name: 'Анна Козлова',
+    avatarUrl: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150',
+    createdAt: '2024-02-10T00:00:00Z',
+    locale: 'ru'
+  },
+  {
+    id: 'client-3',
+    role: 'client',
+    email: 'dmitry@example.com',
+    phone: '+7 925 603-74-19',
+    name: 'Дмитрий Волков',
+    avatarUrl: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150',
+    createdAt: '2024-03-05T00:00:00Z',
+    locale: 'ru'
+  },
+  {
     id: 'coach-1',
     role: 'coach',
     email: 'maria@example.com',
+    phone: '+7 985 712-50-16',
     name: 'Мария Смирнова',
     avatarUrl: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150',
     createdAt: '2023-06-01T00:00:00Z',
@@ -127,15 +153,71 @@ export const mockScheduledWorkouts: ScheduledWorkout[] = [
   {
     id: 'sw-1',
     clientId: 'client-1',
-    date: '2025-01-16',
+    date: getCurrentWeekDate(0),
+    time: '10:00',
     templateId: 'wt-1',
-    status: 'planned',
+    status: 'done',
     planned: mockWorkoutTemplates[0].blocks
   },
   {
     id: 'sw-2',
     clientId: 'client-1',
-    date: '2025-01-18',
+    date: getCurrentWeekDate(2),
+    time: '18:30',
+    templateId: 'wt-2',
+    status: 'done',
+    planned: mockWorkoutTemplates[1].blocks
+  },
+  {
+    id: 'sw-3',
+    clientId: 'client-1',
+    date: getCurrentWeekDate(4),
+    time: '16:00',
+    templateId: 'wt-1',
+    status: 'planned',
+    planned: mockWorkoutTemplates[0].blocks
+  },
+  {
+    id: 'sw-4',
+    clientId: 'client-1',
+    date: getCurrentWeekDate(6),
+    time: '11:00',
+    templateId: 'wt-2',
+    status: 'planned',
+    planned: mockWorkoutTemplates[1].blocks
+  },
+  {
+    id: 'sw-5',
+    clientId: 'client-1',
+    date: getCurrentWeekDate(9),
+    time: '19:00',
+    templateId: 'wt-1',
+    status: 'planned',
+    planned: mockWorkoutTemplates[0].blocks
+  },
+  {
+    id: 'sw-6',
+    clientId: 'client-2',
+    date: getCurrentWeekDate(2),
+    time: '10:00',
+    templateId: 'wt-1',
+    status: 'planned',
+    planned: mockWorkoutTemplates[0].blocks
+  },
+  {
+    id: 'sw-7',
+    clientId: 'client-3',
+    date: getCurrentWeekDate(2),
+    time: '14:30',
+    templateId: 'wt-2',
+    status: 'planned',
+    planned: mockWorkoutTemplates[1].blocks
+  },
+  {
+    id: 'sw-8',
+    clientId: 'client-2',
+    date: getCurrentWeekDate(4),
+    time: '12:00',
     templateId: 'wt-2',
     status: 'planned',
     planned: mockWorkoutTemplates[1].blocks
@@ -210,22 +292,43 @@ export const mockGoals: Goal[] = [
   {
     id: 'goal-1',
     clientId: 'client-1',
+    createdBy: 'coach',
     type: 'weight',
     targetValue: 78,
+    startValue: 85.2,
     currentValue: 82.5,
     unit: 'kg',
-    deadline: '2025-04-01',
+    deadline: getCurrentWeekDate(55),
     note: 'Снизить вес до 78 кг',
+    createdAt: getCurrentWeekDate(-20),
     status: 'active'
   },
   {
     id: 'goal-2',
     clientId: 'client-1',
+    createdBy: 'client',
     type: 'strength',
     targetValue: 100,
+    startValue: 70,
     currentValue: 80,
     unit: 'kg',
     note: 'Жим лёжа 100 кг на 1 раз',
+    deadline: getCurrentWeekDate(90),
+    createdAt: getCurrentWeekDate(-12),
+    status: 'active'
+  },
+  {
+    id: 'goal-3',
+    clientId: 'client-1',
+    createdBy: 'coach',
+    type: 'habit',
+    targetValue: 12,
+    startValue: 0,
+    currentValue: 8,
+    unit: 'times',
+    note: 'Выполнить 12 тренировок за месяц',
+    deadline: getCurrentWeekDate(28),
+    createdAt: getCurrentWeekDate(-4),
     status: 'active'
   }
 ];

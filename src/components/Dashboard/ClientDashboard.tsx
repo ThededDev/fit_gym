@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Dumbbell, Apple, Target, TrendingUp, MessageCircle, Award, Clock } from 'lucide-react';
+import { Calendar, Dumbbell, Apple, Target, TrendingUp, MessageCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -27,7 +27,6 @@ const todayMacros = {
 export default function ClientDashboard() {
   const today = new Date();
   const caloriesProgress = (todayMacros.calories / dailyTargets.calories) * 100;
-  const proteinProgress = (todayMacros.protein / dailyTargets.protein) * 100;
   
   return (
     <div className="p-6 space-y-8">

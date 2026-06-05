@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Dumbbell, Users } from 'lucide-react';
 import { Role } from '../../types';
+import { apiPost } from '../../lib/api';
 
 interface RegisterFormProps {
   onToggleMode: () => void;
@@ -27,12 +28,20 @@ export default function RegisterForm({ onToggleMode }: RegisterFormProps) {
       return;
     }
 
-    // Mock registration
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    alert('Регистрация успешна! Войдите в систему.');
-    onToggleMode();
-    setIsLoading(false);
+    try {
+      await apiPost('/auth/register', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      });
+      alert('Регистрация успешна! Войдите в систему.');
+      onToggleMode();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Не удалось зарегистрироваться');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -8,6 +8,9 @@ import ClientDashboard from './components/Dashboard/ClientDashboard';
 import CoachDashboard from './components/Dashboard/CoachDashboard';
 import WorkoutList from './components/Workouts/WorkoutList';
 import NutritionDashboard from './components/Nutrition/NutritionDashboard';
+import WorkoutCalendar from './components/Calendar/WorkoutCalendar';
+import GoalsDashboard from './components/Goals/GoalsDashboard';
+import CoachClients from './components/Clients/CoachClients';
 
 function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -37,10 +40,10 @@ function AppContent() {
           />
           <Route path="/workouts" element={<WorkoutList />} />
           <Route path="/nutrition" element={<NutritionDashboard />} />
-          <Route path="/calendar" element={<div className="p-6"><h1 className="text-2xl font-bold">Календарь (В разработке)</h1></div>} />
-          <Route path="/goals" element={<div className="p-6"><h1 className="text-2xl font-bold">Цели (В разработке)</h1></div>} />
+          <Route path="/calendar" element={<WorkoutCalendar />} />
+          <Route path="/goals" element={<GoalsDashboard />} />
           <Route path="/progress" element={<div className="p-6"><h1 className="text-2xl font-bold">Прогресс (В разработке)</h1></div>} />
-          <Route path="/coach/clients" element={<div className="p-6"><h1 className="text-2xl font-bold">Клиенты (В разработке)</h1></div>} />
+          <Route path="/coach/clients" element={<CoachClients />} />
           <Route path="/library" element={<div className="p-6"><h1 className="text-2xl font-bold">Библиотека (В разработке)</h1></div>} />
           <Route path="/messages" element={<div className="p-6"><h1 className="text-2xl font-bold">Сообщения (В разработке)</h1></div>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

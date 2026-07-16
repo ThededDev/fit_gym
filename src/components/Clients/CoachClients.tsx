@@ -4,7 +4,6 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronRight,
-  Clock3,
   Mail,
   MessageSquare,
   Phone,
@@ -18,8 +17,8 @@ import {
 import { format, isBefore, parseISO, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { mockScheduledWorkouts, mockUsers, mockWorkoutTemplates } from '../../data/mockData';
-import { User } from '../../types';
-import { apiDelete, apiGet, apiPost } from '../../lib/api';
+import { MacroTargets, NutritionPlan, ScheduledWorkout, User } from '../../types';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api';
 
 type ClientFilter = 'all' | 'active' | 'attention';
 
@@ -69,6 +68,10 @@ function getTemplateName(templateId?: string) {
   return mockWorkoutTemplates.find(template => template.id === templateId)?.name ?? 'Тренировка';
 }
 
+function formatWorkoutDate(date: string) {
+  return format(parseISO(date), 'd MMMM, EEEEEE', { locale: ru });
+}
+
 export default function CoachClients() {
   const today = startOfDay(new Date());
   const [clients, setClients] = useState<User[]>(mockUsers.filter(user => user.role === 'client'));
@@ -76,10 +79,28 @@ export default function CoachClients() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<ClientFilter>('all');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isWorkoutOpen, setIsWorkoutOpen] = useState(false);
+  const [isNutritionOpen, setIsNutritionOpen] = useState(false);
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '' });
+  const [workouts, setWorkouts] = useState<ScheduledWorkout[]>(mockScheduledWorkouts);
+  const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>([]);
+  const [heightCm, setHeightCm] = useState('');
+  const [weightKg, setWeightKg] = useState('');
+  const [workoutTemplateId, setWorkoutTemplateId] = useState(mockWorkoutTemplates[0]?.id ?? '');
+  const [workoutDate, setWorkoutDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [workoutTime, setWorkoutTime] = useState('10:00');
+  const [nutritionTargets, setNutritionTargets] = useState<MacroTargets>({ calories: 2200, protein: 160, fat: 70, carbs: 240 });
 
   useEffect(() => {
-    apiGet<User[]>('/clients').then(setClients).catch(console.error);
+    Promise.all([
+      apiGet<User[]>('/clients'),
+      apiGet<ScheduledWorkout[]>('/workouts'),
+      apiGet<NutritionPlan[]>('/nutrition-plans')
+    ]).then(([nextClients, nextWorkouts, nextPlans]) => {
+      setClients(nextClients);
+      setWorkouts(nextWorkouts);
+      setNutritionPlans(nextPlans);
+    }).catch(console.error);
   }, []);
 
   const visibleClients = useMemo(() => clients.filter(client => {
@@ -91,12 +112,18 @@ export default function CoachClients() {
 
   const selectedClient = clients.find(client => client.id === selectedClientId) ?? clients[0];
   const selectedMeta = selectedClient ? clientMeta[selectedClient.id] : undefined;
+  const selectedNutritionPlan = selectedClient ? nutritionPlans.find(plan => plan.clientId === selectedClient.id) : undefined;
   const selectedWorkouts = selectedClient
-    ? mockScheduledWorkouts
+    ? workouts
         .filter(workout => workout.clientId === selectedClient.id && !isBefore(parseISO(workout.date), today))
         .sort((a, b) => `${a.date}${a.time ?? ''}`.localeCompare(`${b.date}${b.time ?? ''}`))
-        .slice(0, 4)
     : [];
+
+  useEffect(() => {
+    if (!selectedClient) return;
+    setHeightCm(String(selectedClient.heightCm ?? 180));
+    setWeightKg(String(selectedClient.weightKg ?? selectedMeta?.weight?.replace(' кг', '') ?? 80));
+  }, [selectedClient, selectedMeta]);
 
   const handleAddClient = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -123,6 +150,55 @@ export default function CoachClients() {
     const nextClients = clients.filter(client => client.id !== selectedClient.id);
     setClients(nextClients);
     setSelectedClientId(nextClients[0]?.id ?? '');
+  };
+
+  const handleSaveParams = async () => {
+    if (!selectedClient) return;
+    const updated = await apiPatch<User>(`/clients/${selectedClient.id}`, {
+      heightCm: Number(heightCm),
+      weightKg: Number(weightKg)
+    });
+    setClients(current => current.map(client => client.id === updated.id ? updated : client));
+  };
+
+  const handleAssignWorkout = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedClient) return;
+    const template = mockWorkoutTemplates.find(item => item.id === workoutTemplateId);
+    if (!template) return;
+    const workout = await apiPost<ScheduledWorkout>('/workouts', {
+      clientId: selectedClient.id,
+      date: workoutDate,
+      time: workoutTime,
+      templateId: template.id,
+      planned: template.blocks,
+      status: 'planned'
+    });
+    setWorkouts(current => [...current, workout]);
+    setIsWorkoutOpen(false);
+  };
+
+  const handleSaveNutrition = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedClient) return;
+    const payload: NutritionPlan = {
+      id: selectedNutritionPlan?.id ?? `nutrition-${Date.now()}`,
+      clientId: selectedClient.id,
+      coachId: 'coach-1',
+      dailyTargets: nutritionTargets,
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      meals: selectedNutritionPlan?.meals ?? []
+    };
+    const saved = selectedNutritionPlan
+      ? await apiPatch<NutritionPlan>(`/nutrition-plans/${selectedNutritionPlan.id}`, payload)
+      : await apiPost<NutritionPlan>('/nutrition-plans', payload);
+    setNutritionPlans(current => [...current.filter(plan => plan.clientId !== selectedClient.id), saved]);
+    setIsNutritionOpen(false);
+  };
+
+  const openNutritionEditor = () => {
+    setNutritionTargets(selectedNutritionPlan?.dailyTargets ?? { calories: 2200, protein: 160, fat: 70, carbs: 240 });
+    setIsNutritionOpen(true);
   };
 
   return (
@@ -291,6 +367,38 @@ export default function CoachClients() {
               </section>
 
               <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h2 className="font-semibold text-gray-900 dark:text-white">Параметры клиента</h2>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <label>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Рост</span>
+                    <input value={heightCm} onChange={event => setHeightCm(event.target.value)} type="number" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Вес</span>
+                    <input value={weightKg} onChange={event => setWeightKg(event.target.value)} type="number" step="0.1" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  </label>
+                </div>
+                <button onClick={handleSaveParams} className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Сохранить параметры</button>
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">Программа питания</h2>
+                  <button onClick={openNutritionEditor} className="text-sm font-semibold text-blue-600 dark:text-blue-400">Изменить</button>
+                </div>
+                {selectedNutritionPlan ? (
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <p>Ккал: <b>{selectedNutritionPlan.dailyTargets.calories}</b></p>
+                    <p>Белки: <b>{selectedNutritionPlan.dailyTargets.protein} г</b></p>
+                    <p>Жиры: <b>{selectedNutritionPlan.dailyTargets.fat} г</b></p>
+                    <p>Углеводы: <b>{selectedNutritionPlan.dailyTargets.carbs} г</b></p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Программа питания не назначена.</p>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 <h2 className="font-semibold text-gray-900 dark:text-white">Текущий ориентир</h2>
                 <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">{selectedMeta?.goal ?? 'Цель ещё не определена'}</p>
                 <div className="mt-4 flex justify-between text-sm">
@@ -304,24 +412,27 @@ export default function CoachClients() {
               </section>
 
               <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <h2 className="font-semibold text-gray-900 dark:text-white">Ближайшие тренировки</h2>
-                <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">Календарь тренировок</h2>
+                  <button onClick={() => setIsWorkoutOpen(true)} className="text-sm font-semibold text-blue-600 dark:text-blue-400">+ Создать</button>
+                </div>
+                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
                   {selectedWorkouts.map(workout => (
-                    <div key={workout.id} className="flex items-center gap-3">
-                      <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
-                        <CalendarDays className="h-4 w-4" />
+                    <div key={workout.id} className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 border-b border-gray-100 px-3 py-3 last:border-b-0 dark:border-gray-700">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {workout.time ?? '--:--'}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{getTemplateName(workout.templateId)}</p>
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                          <Clock3 className="h-3.5 w-3.5" />
-                          {format(parseISO(workout.date), 'd MMMM', { locale: ru })}, {workout.time ?? 'без времени'}
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {formatWorkoutDate(workout.date)}
                         </p>
                       </div>
                     </div>
                   ))}
                   {selectedWorkouts.length === 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Нет предстоящих тренировок.</p>
+                    <p className="p-3 text-sm text-gray-500 dark:text-gray-400">Нет предстоящих тренировок.</p>
                   )}
                 </div>
               </section>
@@ -400,6 +511,45 @@ export default function CoachClients() {
                 <Plus className="h-4 w-4" />
                 Добавить в список
               </button>
+            </motion.form>
+          </motion.div>
+        )}
+
+        {isWorkoutOpen && selectedClient && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-950/45 p-4" onClick={() => setIsWorkoutOpen(false)}>
+            <motion.form initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }} onSubmit={handleAssignWorkout} onClick={event => event.stopPropagation()} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+              <div className="flex items-start justify-between">
+                <div><p className="text-sm font-medium text-blue-600">{selectedClient.name}</p><h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Создать тренировку</h2></div>
+                <button type="button" onClick={() => setIsWorkoutOpen(false)}><X className="h-5 w-5 text-gray-400" /></button>
+              </div>
+              <div className="mt-5 space-y-4">
+                <select value={workoutTemplateId} onChange={event => setWorkoutTemplateId(event.target.value)} className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">{mockWorkoutTemplates.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}</select>
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="date" value={workoutDate} onChange={event => setWorkoutDate(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  <input type="time" value={workoutTime} onChange={event => setWorkoutTime(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                </div>
+              </div>
+              <button type="submit" className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-500 to-emerald-500 px-4 py-3 text-sm font-semibold text-white">Назначить тренировку</button>
+            </motion.form>
+          </motion.div>
+        )}
+
+        {isNutritionOpen && selectedClient && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-950/45 p-4" onClick={() => setIsNutritionOpen(false)}>
+            <motion.form initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }} onSubmit={handleSaveNutrition} onClick={event => event.stopPropagation()} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+              <div className="flex items-start justify-between">
+                <div><p className="text-sm font-medium text-blue-600">{selectedClient.name}</p><h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Программа питания</h2></div>
+                <button type="button" onClick={() => setIsNutritionOpen(false)}><X className="h-5 w-5 text-gray-400" /></button>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                {(['calories', 'protein', 'fat', 'carbs'] as const).map(key => (
+                  <label key={key}>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{key === 'calories' ? 'Ккал' : key === 'protein' ? 'Белки' : key === 'fat' ? 'Жиры' : 'Углеводы'}</span>
+                    <input type="number" value={nutritionTargets[key]} onChange={event => setNutritionTargets(current => ({ ...current, [key]: Number(event.target.value) }))} className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  </label>
+                ))}
+              </div>
+              <button type="submit" className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-500 to-emerald-500 px-4 py-3 text-sm font-semibold text-white">Сохранить питание</button>
             </motion.form>
           </motion.div>
         )}

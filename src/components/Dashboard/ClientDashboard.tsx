@@ -11,18 +11,18 @@ const weightData = mockProgressMetrics.map(metric => ({
   weight: metric.weightKg
 }));
 
-const macroData = [
-  { name: 'Белки', value: 35, color: '#3B82F6' },
-  { name: 'Жиры', value: 25, color: '#10B981' },
-  { name: 'Углеводы', value: 40, color: '#F59E0B' }
-];
-
 const todayMacros = {
   calories: 1850,
   protein: 142,
   fat: 58,
   carbs: 195
 };
+
+const macroData = [
+  { name: 'Белки', value: todayMacros.protein, target: dailyTargets.protein, color: '#3B82F6' },
+  { name: 'Жиры', value: todayMacros.fat, target: dailyTargets.fat, color: '#10B981' },
+  { name: 'Углеводы', value: todayMacros.carbs, target: dailyTargets.carbs, color: '#F59E0B' }
+];
 
 export default function ClientDashboard() {
   const today = new Date();
@@ -228,7 +228,7 @@ export default function ClientDashboard() {
                   </span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {item.value}%
+                  {item.value} г / {item.target} г
                 </span>
               </div>
             ))}

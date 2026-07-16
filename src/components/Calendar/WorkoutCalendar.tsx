@@ -7,14 +7,13 @@ import {
   ChevronRight,
   Clock3,
   Dumbbell,
-  Mail,
-  Phone,
   Plus,
   Trash2,
   UserRound,
   X
 } from 'lucide-react';
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
@@ -38,6 +37,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api';
 import { User } from '../../types';
 
 const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const scheduleHours = ['10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
 
 const statusStyles: Record<ScheduledWorkout['status'], string> = {
   planned: 'bg-blue-500',
@@ -80,7 +80,9 @@ export default function WorkoutCalendar() {
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(mockWorkoutTemplates[0]?.id ?? '');
   const [selectedClientId, setSelectedClientId] = useState('client-1');
+  const [clientFilter, setClientFilter] = useState('all');
   const [selectedTime, setSelectedTime] = useState('10:00');
+  const [selectedDates, setSelectedDates] = useState<string[]>([format(today, 'yyyy-MM-dd')]);
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
 
   const calendarDays = useMemo(() => {
@@ -101,7 +103,7 @@ export default function WorkoutCalendar() {
       .catch(console.error);
   }, []);
   const visibleWorkouts = isCoach
-    ? scheduledWorkouts
+    ? scheduledWorkouts.filter(workout => clientFilter === 'all' || workout.clientId === clientFilter)
     : scheduledWorkouts.filter(workout => workout.clientId === state.user?.id);
   const selectedDayWorkouts = visibleWorkouts
     .filter(workout => isSameDay(parseISO(workout.date), selectedDate))
@@ -134,20 +136,28 @@ export default function WorkoutCalendar() {
     if (!template) return;
 
     const date = format(selectedDate, 'yyyy-MM-dd');
-    const nextWorkout: ScheduledWorkout = {
-      id: selectedWorkout?.id ?? `sw-${Date.now()}`,
+    const datesToAssign = editingWorkoutId ? [date] : selectedDates.length ? selectedDates : [date];
+    const baseWorkout: Omit<ScheduledWorkout, 'id' | 'date'> = {
       clientId: selectedClientId,
-      date,
       time: selectedTime,
       templateId: template.id,
       planned: template.blocks,
       status: 'planned'
     };
 
-    const saved = selectedWorkout
-      ? await apiPatch<ScheduledWorkout>(`/workouts/${selectedWorkout.id}`, nextWorkout)
-      : await apiPost<ScheduledWorkout>('/workouts', nextWorkout);
-    setScheduledWorkouts(current => [...current.filter(workout => workout.id !== selectedWorkout?.id), saved]);
+    if (selectedWorkout) {
+      const saved = await apiPatch<ScheduledWorkout>(`/workouts/${selectedWorkout.id}`, { ...baseWorkout, id: selectedWorkout.id, date });
+      setScheduledWorkouts(current => [...current.filter(workout => workout.id !== selectedWorkout.id), saved]);
+    } else {
+      const created = await Promise.all(datesToAssign.map((assignDate, index) => (
+        apiPost<ScheduledWorkout>('/workouts', {
+          ...baseWorkout,
+          id: `sw-${Date.now()}-${index}`,
+          date: assignDate
+        })
+      )));
+      setScheduledWorkouts(current => [...current, ...created]);
+    }
     setIsAssignOpen(false);
     setEditingWorkoutId(null);
   };
@@ -166,12 +176,27 @@ export default function WorkoutCalendar() {
     )));
   };
 
-  const openAssignModal = (workout?: ScheduledWorkout) => {
+  const openAssignModal = (workout?: ScheduledWorkout, time?: string, day = selectedDate) => {
+    const fallbackClientId = clientFilter !== 'all' ? clientFilter : clients[0]?.id ?? 'client-1';
+    setSelectedDate(day);
     setEditingWorkoutId(workout?.id ?? null);
-    setSelectedClientId(workout?.clientId ?? 'client-1');
+    setSelectedClientId(workout?.clientId ?? fallbackClientId);
     setSelectedTemplateId(workout?.templateId ?? mockWorkoutTemplates[0]?.id ?? '');
-    setSelectedTime(workout?.time ?? '10:00');
+    setSelectedTime(workout?.time ?? time ?? '10:00');
+    setSelectedDates([format(day, 'yyyy-MM-dd')]);
     setIsAssignOpen(true);
+  };
+
+  const toggleAssignDate = (date: string) => {
+    setSelectedDates(current => current.includes(date)
+      ? current.filter(item => item !== date)
+      : [...current, date].sort());
+  };
+
+  const getClientShortName = (client?: User) => {
+    if (!client) return '-';
+    const [lastName, firstName] = client.name.split(' ');
+    return `${lastName} ${firstName?.[0] ?? ''}.`;
   };
 
   return (
@@ -216,6 +241,23 @@ export default function WorkoutCalendar() {
           )}
         </div>
       </header>
+
+      {isCoach && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-center dark:border-gray-700 dark:bg-gray-800">
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Фильтр по подопечному</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Показывает записи выбранного клиента в календаре и расписании.</p>
+          </div>
+          <select
+            value={clientFilter}
+            onChange={event => setClientFilter(event.target.value)}
+            className="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500 md:ml-auto dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          >
+            <option value="all">Все подопечные</option>
+            {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+          </select>
+        </section>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <motion.section
@@ -327,63 +369,41 @@ export default function WorkoutCalendar() {
                   </span>
                 </div>
 
-                <div className="mt-4 space-y-3">
-                  {selectedDayWorkouts.map(workout => {
-                    const workoutClient = clients.find(item => item.id === workout.clientId);
+                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
+                  {scheduleHours.map(hour => {
+                    const workout = selectedDayWorkouts.find(item => item.time === hour);
+                    const workoutClient = workout ? clients.find(item => item.id === workout.clientId) : undefined;
                     const template = getTemplate(workout);
                     return (
-                      <article key={workout.id} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                        <div className="flex items-start gap-3">
-                          <img
-                            src={workoutClient?.avatarUrl}
-                            alt={workoutClient?.name}
-                            className="h-10 w-10 rounded-full object-cover"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-semibold text-gray-900 dark:text-white">{workoutClient?.name}</p>
-                                <p className="mt-0.5 flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                  <Clock3 className="h-3.5 w-3.5" />
-                                  {workout.time ?? 'Время не указано'}
-                                </p>
-                              </div>
-                              <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusBadgeStyles[workout.status]}`}>
-                                {statusLabels[workout.status]}
-                              </span>
-                            </div>
-                            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{template?.name}</p>
-                            <div className="mt-3 space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
-                              <a href={`tel:${workoutClient?.phone}`} className="flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400">
-                                <Phone className="h-3.5 w-3.5" />
-                                {workoutClient?.phone}
-                              </a>
-                              <a href={`mailto:${workoutClient?.email}`} className="flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400">
-                                <Mail className="h-3.5 w-3.5" />
-                                {workoutClient?.email}
-                              </a>
+                      <div key={hour} className="border-b border-gray-100 last:border-b-0 dark:border-gray-700">
+                        <button
+                          onClick={() => workout ? openAssignModal(workout) : openAssignModal(undefined, hour)}
+                          className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        >
+                          <span className="w-14 shrink-0 font-semibold text-gray-900 dark:text-white">{hour}</span>
+                          <span className={`flex-1 ${workout ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
+                            {workout ? getClientShortName(workoutClient) : '-'}
+                          </span>
+                          {workout && <span className="hidden truncate text-xs text-gray-500 sm:block">{template?.name}</span>}
+                        </button>
+                        {workout && (
+                          <div className="space-y-1 px-3 pb-3 pl-20 text-xs text-gray-500 dark:text-gray-400">
+                            <p>{workoutClient?.phone} · {workoutClient?.email}</p>
+                            <div className="flex gap-2">
+                              <button onClick={() => openAssignModal(workout)} className="font-semibold text-blue-600 dark:text-blue-400">Изменить</button>
+                              <button
+                                onClick={async () => {
+                                  await apiDelete(`/workouts/${workout.id}`);
+                                  setScheduledWorkouts(current => current.filter(item => item.id !== workout.id));
+                                }}
+                                className="font-semibold text-red-500"
+                              >
+                                Удалить
+                              </button>
                             </div>
                           </div>
-                        </div>
-                        <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-                          <button
-                            onClick={() => openAssignModal(workout)}
-                            className="flex-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
-                          >
-                            Изменить запись
-                          </button>
-                          <button
-                            onClick={async () => {
-                              await apiDelete(`/workouts/${workout.id}`);
-                              setScheduledWorkouts(current => current.filter(item => item.id !== workout.id));
-                            }}
-                            className="rounded-lg border border-red-200 p-2 text-red-500 transition hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
-                            aria-label="Удалить запись"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </article>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -557,6 +577,33 @@ export default function WorkoutCalendar() {
                       className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     />
                   </label>
+                </div>
+              )}
+
+              {!editingWorkoutId && (
+                <div className="mt-5">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Дни назначения</span>
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {Array.from({ length: 8 }).map((_, index) => {
+                      const day = addDays(selectedDate, index);
+                      const value = format(day, 'yyyy-MM-dd');
+                      const checked = selectedDates.includes(value);
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => toggleAssignDate(value)}
+                          className={`rounded-xl border px-3 py-2 text-sm transition ${
+                            checked
+                              ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {format(day, 'dd.MM EEEEEE', { locale: ru })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

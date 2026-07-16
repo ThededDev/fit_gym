@@ -6,6 +6,8 @@ export interface User {
   email: string;
   phone?: string;
   name: string;
+  heightCm?: number;
+  weightKg?: number;
   avatarUrl?: string;
   createdAt: string;
   locale?: 'ru' | 'en';

@@ -58,7 +58,7 @@ function getGoalProgress(goal: Goal) {
   return Math.min(100, Math.max(0, ((goal.currentValue - goal.startValue) / total) * 100));
 }
 
-function getDeadlineText(deadline?: string) {
+function getDeadlineText(deadline?: string | null) {
   if (!deadline) return 'Без срока';
   const days = differenceInCalendarDays(parseISO(deadline), new Date());
   if (days < 0) return 'Срок истёк';
@@ -277,7 +277,7 @@ export default function GoalsDashboard() {
                         {isCoach && <span className="font-medium text-blue-600 dark:text-blue-400">{clients.find(client => client.id === goal.clientId)?.name}</span>}
                         <span>{typeLabels[goal.type]}</span>
                         <span>{getDeadlineText(goal.deadline)}</span>
-                        {goal.deadline && <span>до {format(parseISO(goal.deadline), 'd MMMM yyyy', { locale: ru })}</span>}
+                        {goal.deadline ? <span>до {format(parseISO(goal.deadline), 'd MMMM yyyy', { locale: ru })}</span> : null}
                       </div>
                     </div>
                   </div>

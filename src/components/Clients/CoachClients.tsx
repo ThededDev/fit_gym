@@ -69,6 +69,7 @@ function getTemplateName(templateId?: string) {
 }
 
 function formatWorkoutDate(date: string) {
+  if (!date) return '—';
   return format(parseISO(date), 'd MMMM, EEEEEE', { locale: ru });
 }
 
@@ -115,7 +116,7 @@ export default function CoachClients() {
   const selectedNutritionPlan = selectedClient ? nutritionPlans.find(plan => plan.clientId === selectedClient.id) : undefined;
   const selectedWorkouts = selectedClient
     ? workouts
-        .filter(workout => workout.clientId === selectedClient.id && !isBefore(parseISO(workout.date), today))
+        .filter(workout => workout.clientId === selectedClient.id && workout.date && !isBefore(parseISO(workout.date), today))
         .sort((a, b) => `${a.date}${a.time ?? ''}`.localeCompare(`${b.date}${b.time ?? ''}`))
     : [];
 
@@ -331,7 +332,7 @@ export default function CoachClients() {
                   <img src={selectedClient.avatarUrl} alt={selectedClient.name} className="h-16 w-16 rounded-full bg-gray-100 object-cover" />
                   <div className="min-w-0">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedClient.name}</h2>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Подопечный с {format(parseISO(selectedClient.createdAt), 'd MMMM yyyy', { locale: ru })}</p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Подопечный с {selectedClient.createdAt ? format(parseISO(selectedClient.createdAt), 'd MMMM yyyy', { locale: ru }) : '—'}</p>
                     {selectedMeta && (
                       <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[selectedMeta.status]}`}>
                         {statusLabels[selectedMeta.status]}

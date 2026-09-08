@@ -106,7 +106,7 @@ export default function WorkoutCalendar() {
     ? scheduledWorkouts.filter(workout => clientFilter === 'all' || workout.clientId === clientFilter)
     : scheduledWorkouts.filter(workout => workout.clientId === state.user?.id);
   const selectedDayWorkouts = visibleWorkouts
-    .filter(workout => isSameDay(parseISO(workout.date), selectedDate))
+    .filter(workout => workout.date && isSameDay(parseISO(workout.date), selectedDate))
     .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
   const selectedWorkout = isCoach
     ? selectedDayWorkouts.find(workout => workout.id === editingWorkoutId)
@@ -115,7 +115,7 @@ export default function WorkoutCalendar() {
   const coach = mockUsers.find(user => user.role === 'coach');
 
   const upcomingWorkouts = visibleWorkouts
-    .filter(workout => !isBefore(parseISO(workout.date), today) && workout.status === 'planned')
+    .filter(workout => workout.date && !isBefore(parseISO(workout.date), today) && workout.status === 'planned')
     .sort((a, b) => `${a.date}${a.time ?? ''}`.localeCompare(`${b.date}${b.time ?? ''}`))
     .slice(0, 4);
 
@@ -303,7 +303,7 @@ export default function WorkoutCalendar() {
 
           <div className="grid grid-cols-7">
             {calendarDays.map(day => {
-              const dayWorkouts = visibleWorkouts.filter(item => isSameDay(parseISO(item.date), day));
+              const dayWorkouts = visibleWorkouts.filter(item => item.date && isSameDay(parseISO(item.date), day));
               const workout = dayWorkouts[0];
               const template = getTemplate(workout);
               const selected = isSameDay(day, selectedDate);
@@ -500,7 +500,7 @@ export default function WorkoutCalendar() {
             <div className="mt-4 space-y-3">
               {upcomingWorkouts.map(workout => {
                 const template = getTemplate(workout);
-                const date = parseISO(workout.date);
+                const date = workout.date ? parseISO(workout.date) : today;
                 const workoutClient = clients.find(item => item.id === workout.clientId);
                 return (
                   <button

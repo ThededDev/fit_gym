@@ -387,7 +387,7 @@ export default function WorkoutList() {
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-gray-900 dark:text-white">{getTemplateName(templates, workout.templateId)}</h3>
                       <p className="mt-1 text-sm capitalize text-gray-500 dark:text-gray-400">
-                        {format(parseISO(workout.date), 'EEEE, d MMMM', { locale: ru })}, {workout.time ?? 'без времени'}
+                        {workout.date ? format(parseISO(workout.date), 'EEEE, d MMMM', { locale: ru }) : '—'}, {workout.time ?? 'без времени'}
                       </p>
                       {isCoach && <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">{client?.name}</p>}
                       {isCoach && comment && (

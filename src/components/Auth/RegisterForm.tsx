@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Dumbbell, Users } from 'lucide-react';
+import { Mail, Lock, User, Users } from 'lucide-react';
 import { Role } from '../../types';
 import { apiPost } from '../../lib/api';
 
@@ -58,9 +58,7 @@ export default function RegisterForm({ onToggleMode }: RegisterFormProps) {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Dumbbell className="w-8 h-8 text-white" />
-            </div>
+            <img src="/ofg-logo.svg" alt="OFG" className="w-16 h-16 rounded-2xl mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               ONE FitGym
             </h1>

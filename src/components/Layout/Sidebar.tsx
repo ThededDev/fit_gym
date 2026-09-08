@@ -49,9 +49,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center">
-            <Dumbbell className="w-6 h-6 text-white" />
-          </div>
+          <img src="/ofg-logo.svg" alt="OFG" className="w-10 h-10 rounded-xl" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">ONE FitGym</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">

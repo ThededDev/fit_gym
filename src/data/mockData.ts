@@ -36,6 +36,16 @@ export const mockUsers: User[] = [
     locale: 'ru'
   },
   {
+    id: 'client-4',
+    role: 'client',
+    email: 'elena@example.com',
+    phone: '+7 926 555-66-77',
+    name: 'Елена Соколова',
+    avatarUrl: 'https://images.pexels.com/photos/3764119/pexels-photo-3764119.jpeg?auto=compress&cs=tinysrgb&w=150',
+    createdAt: '2024-04-20T00:00:00Z',
+    locale: 'ru'
+  },
+  {
     id: 'coach-1',
     role: 'coach',
     email: 'maria@example.com',
@@ -43,6 +53,16 @@ export const mockUsers: User[] = [
     name: 'Мария Смирнова',
     avatarUrl: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150',
     createdAt: '2023-06-01T00:00:00Z',
+    locale: 'ru'
+  },
+  {
+    id: 'coach-2',
+    role: 'coach',
+    email: 'alex@example.com',
+    phone: '+7 977 888-99-00',
+    name: 'Алексей Николаев',
+    avatarUrl: 'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=150',
+    createdAt: '2023-08-15T00:00:00Z',
     locale: 'ru'
   }
 ];

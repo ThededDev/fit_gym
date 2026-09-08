@@ -3,15 +3,20 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 const hasDatabase = !!process.env.DATABASE_URL;
 
 let pool = null;
-let pg = null;
+let useFallback = !hasDatabase;
 
 if (hasDatabase) {
-  pg = (await import('pg')).default;
-  const { Pool } = pg;
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes('vercel') ? { rejectUnauthorized: false } : false
-  });
+  try {
+    const pg = (await import('pg')).default;
+    const { Pool } = pg;
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL?.includes('vercel') ? { rejectUnauthorized: false } : false
+    });
+  } catch (e) {
+    console.error('Failed to initialize database pool:', e);
+    useFallback = true;
+  }
 }
 
 function hashPassword(password) {
@@ -67,22 +72,24 @@ function handleFallbackQuery(text, params) {
 }
 
 export async function query(text, params) {
-  if (!hasDatabase) {
+  if (useFallback) {
     return handleFallbackQuery(text, params);
   }
-  const start = Date.now();
   try {
     const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
     return res;
   } catch (error) {
+    if (error.code === '42P01' || error.code === '28000') {
+      console.warn('Database not ready, falling back to in-memory data');
+      useFallback = true;
+      return handleFallbackQuery(text, params);
+    }
     console.error('Database query error:', error);
     throw error;
   }
 }
 
 export async function getClient() {
-  if (!hasDatabase) return { query: handleFallbackQuery, release: () => {} };
+  if (useFallback) return { query: handleFallbackQuery, release: () => {} };
   return await pool.connect();
 }

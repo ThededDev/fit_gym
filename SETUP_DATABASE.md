@@ -1,4 +1,4 @@
-# Настройка базы данных PostgreSQL для Fit Gym
+# Настройка базы данных PostgreSQL для ONE FitGym
 
 ## Варианты развертывания PostgreSQL
 

@@ -101,4 +101,4 @@ createServer(async (request, response) => {
     console.error(error);
     return json(response, 500, { error: 'Internal server error' });
   }
-}).listen(port, () => console.log(`FitTracker API listening on http://localhost:${port}`));
+}).listen(port, () => console.log(`ONE FitGym API listening on http://localhost:${port}`));

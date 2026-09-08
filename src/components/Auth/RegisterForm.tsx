@@ -62,7 +62,7 @@ export default function RegisterForm({ onToggleMode }: RegisterFormProps) {
               <Dumbbell className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Создать аккаунт
+              ONE FitGym
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               Зарегистрируйтесь в системе

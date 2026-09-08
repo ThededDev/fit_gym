@@ -53,7 +53,7 @@ export default function Sidebar() {
             <Dumbbell className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">FitTracker</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">ONE FitGym</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {state.user?.role === 'coach' ? 'Тренер' : 'Пользователь'}
             </p>

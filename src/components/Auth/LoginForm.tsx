@@ -65,7 +65,7 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
               <Dumbbell className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Добро пожаловать
+              ONE FitGym
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               Войдите в свой аккаунт

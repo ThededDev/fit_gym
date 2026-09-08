@@ -1,4 +1,4 @@
--- Fit Gym Database Schema
+-- ONE FitGym Database Schema
 -- PostgreSQL Schema for Fitness App
 
 -- Users table

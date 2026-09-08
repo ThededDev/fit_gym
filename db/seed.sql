@@ -1,4 +1,4 @@
--- Fit Gym Demo Data
+-- ONE FitGym Demo Data
 -- PostgreSQL Seed Data
 
 -- Helper function for password hashing (simplified for demo)

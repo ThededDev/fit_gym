@@ -1,8 +1,8 @@
-import { hashPassword, publicUser, jsonResponse, readBody } from '../_lib';
-import { db } from '../_db';
-import { randomUUID } from 'crypto';
+import { hashPassword, publicUser, jsonResponse, readBody } from '../_lib.mjs';
+import { db } from '../_db.mjs';
+import { randomUUID } from 'node:crypto';
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const payload = await readBody(request);
     const { name, email, password, role } = payload;

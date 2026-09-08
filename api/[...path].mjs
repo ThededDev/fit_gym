@@ -1,6 +1,6 @@
-import { jsonResponse, readBody, publicUser } from './_lib';
-import { db } from './_db';
-import { randomUUID } from 'crypto';
+import { jsonResponse, readBody, publicUser } from './_lib.mjs';
+import { db } from './_db.mjs';
+import { randomUUID } from 'node:crypto';
 
 const resources = { 
   exercises: 'exercises', 
@@ -13,11 +13,11 @@ const resources = {
   comments: 'comments' 
 };
 
-function matchesQuery(item: any, query: URLSearchParams) {
+function matchesQuery(item, query) {
   return [...query.entries()].every(([key, value]) => !value || String(item[key]) === value);
 }
 
-export async function GET(request: Request, { params }: { params: { path: string[] } }) {
+export async function GET(request, { params }) {
   try {
     const path = params.path;
     const [resource, id] = path;
@@ -34,14 +34,14 @@ export async function GET(request: Request, { params }: { params: { path: string
     let items = db.getCollection(collectionName);
     
     if (resource === 'clients') {
-      items = db.users.filter((item: any) => item.role === 'client').map(publicUser);
+      items = db.users.filter((item) => item.role === 'client').map(publicUser);
     }
     
     const url = new URL(request.url);
-    items = items.filter((item: any) => matchesQuery(item, url.searchParams));
+    items = items.filter((item) => matchesQuery(item, url.searchParams));
     
     if (id) {
-      const item = items.find((item: any) => item.id === id);
+      const item = items.find((item) => item.id === id);
       return item ? jsonResponse(item) : jsonResponse({ error: 'Not found' }, 404);
     }
     
@@ -52,7 +52,7 @@ export async function GET(request: Request, { params }: { params: { path: string
   }
 }
 
-export async function POST(request: Request, { params }: { params: { path: string[] } }) {
+export async function POST(request, { params }) {
   try {
     const path = params.path;
     const [resource] = path;
@@ -82,7 +82,7 @@ export async function POST(request: Request, { params }: { params: { path: strin
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { path: string[] } }) {
+export async function PATCH(request, { params }) {
   try {
     const path = params.path;
     const [resource, id] = path;
@@ -111,7 +111,7 @@ export async function PATCH(request: Request, { params }: { params: { path: stri
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { path: string[] } }) {
+export async function DELETE(request, { params }) {
   try {
     const path = params.path;
     const [resource, id] = path;

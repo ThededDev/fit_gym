@@ -1,5 +1,5 @@
-import { hashPassword } from './_lib';
-import { randomUUID } from 'crypto';
+import { hashPassword } from './_lib.mjs';
+import { randomUUID } from 'node:crypto';
 
 // Общее хранилище данных для всех API функций
 // В продакшене нужно заменить на реальную базу данных (PostgreSQL, MongoDB, и т.д.)
@@ -60,24 +60,24 @@ export const db = {
   mealEntries: [],
   comments: [],
   
-  getUserByEmail(email: string) {
+  getUserByEmail(email) {
     return this.users.find(u => u.email === email);
   },
   
-  addUser(user: any) {
+  addUser(user) {
     this.users.push(user);
     return user;
   },
   
-  userExists(email: string) {
+  userExists(email) {
     return this.users.some(u => u.email === email);
   },
   
-  getCollection(collectionName: string) {
+  getCollection(collectionName) {
     return this[collectionName] || [];
   },
   
-  addToCollection(collectionName: string, item: any) {
+  addToCollection(collectionName, item) {
     if (!this[collectionName]) {
       this[collectionName] = [];
     }
@@ -85,7 +85,7 @@ export const db = {
     return item;
   },
   
-  updateInCollection(collectionName: string, id: string, updates: any) {
+  updateInCollection(collectionName, id, updates) {
     const collection = this[collectionName];
     if (!collection) return null;
     
@@ -96,7 +96,7 @@ export const db = {
     return collection[index];
   },
   
-  deleteFromCollection(collectionName: string, id: string) {
+  deleteFromCollection(collectionName, id) {
     const collection = this[collectionName];
     if (!collection) return false;
     

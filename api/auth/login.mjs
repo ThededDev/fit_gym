@@ -1,7 +1,7 @@
-import { verifyPassword, publicUser, jsonResponse, readBody } from '../_lib';
-import { db } from '../_db';
+import { verifyPassword, publicUser, jsonResponse, readBody } from '../_lib.mjs';
+import { db } from '../_db.mjs';
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const payload = await readBody(request);
     const { email, password } = payload;

@@ -58,6 +58,7 @@ export async function ensureDatabaseSchema() {
   } catch (error) {
     console.error('Auto-migration error:', error);
     migrationInProgress = false;
+    // Don't fail if migration fails - system will use fallback
     return false;
   }
 }

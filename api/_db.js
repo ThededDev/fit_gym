@@ -86,8 +86,9 @@ export async function query(text, params) {
     const res = await pool.query(text, params);
     return res;
   } catch (error) {
-    if (error.code === '42P01' || error.code === '28000') {
-      console.warn('Database not ready, falling back to in-memory data');
+    // Handle database connection errors
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED' || error.code === '42P01' || error.code === '28000') {
+      console.warn('Database connection failed, falling back to in-memory data:', error.message);
       useFallback = true;
       return handleFallbackQuery(text, params);
     }

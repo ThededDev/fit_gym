@@ -20,7 +20,7 @@
 3. Перейдите в **Settings** → **Environment Variables**
 4. Добавьте переменную:
    ```
-   DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.kptoweyhevaasfdbwbbs.supabase.co:5432/postgres
+   DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.kptoweyhevaasfdbwbbs.supabase.co:5432/postgres?sslmode=verify-full
    ```
 5. Выберите все окружения: **Production**, **Preview**, **Development**
 6. Нажмите **Save**

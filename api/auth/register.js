@@ -1,8 +1,12 @@
 import { query, hashPassword, publicUser } from '../_db.js';
 import { randomUUID } from 'node:crypto';
+import { ensureDatabaseSchema } from '../_auto-migrate.js';
 
 export async function POST(request) {
   try {
+    // Ensure database schema exists
+    await ensureDatabaseSchema();
+
     const body = await request.text();
     const payload = body ? JSON.parse(body) : {};
     const { name, email, password, role, inviteCode } = payload;

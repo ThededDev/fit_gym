@@ -11,7 +11,7 @@ if (hasDatabase) {
     const { Pool } = pg;
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes('vercel') ? { rejectUnauthorized: false } : false
+      ssl: { rejectUnauthorized: false } // Required for Supabase
     });
   } catch (e) {
     console.error('Failed to initialize database pool:', e);

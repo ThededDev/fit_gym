@@ -1,7 +1,11 @@
 import { query, verifyPassword, publicUser } from '../_db.js';
+import { ensureDatabaseSchema } from '../_auto-migrate.js';
 
 export async function POST(request) {
   try {
+    // Ensure database schema exists
+    await ensureDatabaseSchema();
+
     const body = await request.text();
     const payload = body ? JSON.parse(body) : {};
     const { email, password } = payload;

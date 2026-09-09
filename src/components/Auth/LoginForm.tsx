@@ -61,7 +61,9 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
           {/* Logo */}
           <div className="text-center mb-8">
-            <img src="/ofg-logo.svg" alt="OFG" className="w-16 h-16 rounded-2xl mx-auto mb-4" />
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-white text-xl font-bold">OFG</span>
+            </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               ONE FitGym
             </h1>

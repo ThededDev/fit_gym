@@ -1,4 +1,4 @@
-import { supabase, hashPassword, publicUser } from '../_supabase.js';
+import { findUserByEmail, insertUser, insertClientProfile, insertCoachProfile, hashPassword, publicUser } from '../_supabase.js';
 import { randomUUID } from 'node:crypto';
 
 export async function POST(request) {
@@ -11,70 +11,39 @@ export async function POST(request) {
       return Response.json({ error: 'Все поля обязательны' }, { status: 400 });
     }
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
+    const existing = await findUserByEmail(email);
+    if (existing) {
       return Response.json({ error: 'Email уже зарегистрирован' }, { status: 409 });
-    }
-
-    // For coaches, verify invite code if provided
-    if (role === 'coach' && inviteCode) {
-      const { data: coachCheck } = await supabase
-        .from('coach_profiles')
-        .select('user_id')
-        .eq('invite_code', inviteCode)
-        .single();
-      
-      if (coachCheck) {
-        return Response.json({ error: 'Инвайт код уже используется' }, { status: 400 });
-      }
     }
 
     const userId = `${role}-${randomUUID()}`;
     const passwordHash = hashPassword(password);
 
-    // Insert user
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: userId,
-        email,
-        password_hash: passwordHash,
-        name,
-        role,
-        locale: 'ru'
-      })
-      .select()
-      .single();
+    const user = await insertUser({
+      id: userId,
+      email,
+      password_hash: passwordHash,
+      name,
+      role,
+      phone: payload.phone || null,
+      avatar_url: payload.avatar_url || null,
+      locale: 'ru'
+    });
 
-    if (userError) {
-      return Response.json({ error: 'Ошибка при создании пользователя' }, { status: 500 });
-    }
-
-    // Create profile based on role
     if (role === 'client') {
-      await supabase
-        .from('client_profiles')
-        .insert({
-          user_id: userId,
-          privacy: { progressPhotosVisibleToCoach: true }
-        });
+      await insertClientProfile({
+        user_id: userId,
+        privacy: { progressPhotosVisibleToCoach: true }
+      });
     } else if (role === 'coach') {
       const coachInviteCode = inviteCode || `${name.toUpperCase().slice(0, 4)}${Date.now().toString().slice(-4)}`;
-      await supabase
-        .from('coach_profiles')
-        .insert({
-          user_id: userId,
-          bio: '',
-          specialties: [],
-          invite_code: coachInviteCode,
-          is_verified: false
-        });
+      await insertCoachProfile({
+        user_id: userId,
+        bio: '',
+        specialties: [],
+        invite_code: coachInviteCode,
+        is_verified: false
+      });
     }
 
     return Response.json(publicUser(user), { status: 201 });

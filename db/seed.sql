@@ -1,17 +1,15 @@
 -- ONE FitGym Demo Data
 -- PostgreSQL Seed Data
-
--- Helper function for password hashing (simplified for demo)
--- In production, use proper bcrypt/scrypt in application layer
+-- Password hash: scrypt hash for 'demo'
 
 -- Demo Users
 INSERT INTO users (id, email, password_hash, name, role, phone, avatar_url, locale, created_at) VALUES
-('client-1', 'ivan@example.com', '$2b$10$demo_hash_for_ivan', 'Иван Петров', 'client', '+7 916 420-18-34', 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-01-15T00:00:00Z'),
-('client-2', 'anna@example.com', '$2b$10$demo_hash_for_anna', 'Анна Козлова', 'client', '+7 903 118-42-07', 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-02-10T00:00:00Z'),
-('client-3', 'dmitry@example.com', '$2b$10$demo_hash_for_dmitry', 'Дмитрий Волков', 'client', '+7 925 603-74-19', 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-03-05T00:00:00Z'),
-('client-4', 'elena@example.com', '$2b$10$demo_hash_for_elena', 'Елена Соколова', 'client', '+7 926 555-66-77', 'https://images.pexels.com/photos/3764119/pexels-photo-3764119.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-04-20T00:00:00Z'),
-('coach-1', 'maria@example.com', '$2b$10$demo_hash_for_maria', 'Мария Смирнова', 'coach', '+7 985 712-50-16', 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2023-06-01T00:00:00Z'),
-('coach-2', 'alex@example.com', '$2b$10$demo_hash_for_alex', 'Алексей Николаев', 'coach', '+7 977 888-99-00', 'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2023-08-15T00:00:00Z')
+('client-1', 'ivan@example.com', 'c71b8ebcaf2e89549fa9d2b7a417a00d:c2c212cc194c34065b3a6c657853f1ecff1d24ffd44ef601bde5a2d6e7d31ceac842c3e91a310cac670b876a83c67e7a7499e9cf549033403fd745a015da4060', 'Иван Петров', 'client', '+7 916 420-18-34', 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-01-15T00:00:00Z'),
+('client-2', 'anna@example.com', 'c71b8ebcaf2e89549fa9d2b7a417a00d:c2c212cc194c34065b3a6c657853f1ecff1d24ffd44ef601bde5a2d6e7d31ceac842c3e91a310cac670b876a83c67e7a7499e9cf549033403fd745a015da4060', 'Анна Козлова', 'client', '+7 903 118-42-07', 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-02-10T00:00:00Z'),
+('client-3', 'dmitry@example.com', 'c71b8ebcaf2e89549fa9d2b7a417a00d:c2c212cc194c34065b3a6c657853f1ecff1d24ffd44ef601bde5a2d6e7d31ceac842c3e91a310cac670b876a83c67e7a7499e9cf549033403fd745a015da4060', 'Дмитрий Волков', 'client', '+7 925 603-74-19', 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-03-05T00:00:00Z'),
+('client-4', 'elena@example.com', 'c71b8ebcaf2e89549fa9d2b7a417a00d:c2c212cc194c34065b3a6c657853f1ecff1d24ffd44ef601bde5a2d6e7d31ceac842c3e91a310cac670b876a83c67e7a7499e9cf549033403fd745a015da4060', 'Елена Соколова', 'client', '+7 926 555-66-77', 'https://images.pexels.com/photos/3764119/pexels-photo-3764119.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2024-04-20T00:00:00Z'),
+('coach-1', 'maria@example.com', 'c71b8ebcaf2e89549fa9d2b7a417a00d:c2c212cc194c34065b3a6c657853f1ecff1d24ffd44ef601bde5a2d6e7d31ceac842c3e91a310cac670b876a83c67e7a7499e9cf549033403fd745a015da4060', 'Мария Смирнова', 'coach', '+7 985 712-50-16', 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2023-06-01T00:00:00Z'),
+('coach-2', 'alex@example.com', 'c71b8ebcaf2e89549fa9d2b7a417a00d:c2c212cc194c34065b3a6c657853f1ecff1d24ffd44ef601bde5a2d6e7d31ceac842c3e91a310cac670b876a83c67e7a7499e9cf549033403fd745a015da4060', 'Алексей Николаев', 'coach', '+7 977 888-99-00', 'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=150', 'ru', '2023-08-15T00:00:00Z')
 ON CONFLICT (id) DO NOTHING;
 
 -- Client Profiles

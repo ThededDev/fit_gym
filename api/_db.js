@@ -9,8 +9,15 @@ if (hasDatabase) {
   try {
     const pg = (await import('pg')).default;
     const { Pool } = pg;
+    
+    // Parse and fix SSL mode in connection string
+    let connectionString = process.env.DATABASE_URL;
+    if (connectionString && connectionString.includes('sslmode=require')) {
+      connectionString = connectionString.replace('sslmode=require', 'sslmode=verify-full');
+    }
+    
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: connectionString,
       ssl: { rejectUnauthorized: false } // Required for Supabase
     });
   } catch (e) {

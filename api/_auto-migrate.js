@@ -1,4 +1,4 @@
-import { query } from './_db.js';
+import { supabase } from './_supabase.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -18,14 +18,12 @@ export async function ensureDatabaseSchema() {
     console.log('Checking database schema...');
 
     // Check if users table exists
-    const checkResult = await query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'users'
-      );
-    `);
+    const { data: tables, error: tablesError } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1);
 
-    if (checkResult.rows[0]?.exists) {
+    if (!tablesError && tables) {
       console.log('Database schema already exists');
       migrationCompleted = true;
       migrationInProgress = false;
@@ -39,26 +37,15 @@ export async function ensureDatabaseSchema() {
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
     console.log('Creating database schema...');
-    // Execute schema
-    await query(schema);
-    console.log('Schema created successfully');
-
-    // Read seed file
-    const seedPath = path.join(__dirname, '../db/seed.sql');
-    const seed = fs.readFileSync(seedPath, 'utf8');
-
-    console.log('Inserting seed data...');
-    // Execute seed data
-    await query(seed);
-    console.log('Seed data inserted successfully');
-
-    migrationCompleted = true;
+    // Note: Supabase doesn't support raw SQL execution via JS client
+    // Schema needs to be created manually in Supabase SQL Editor
+    console.log('Please run the schema.sql in Supabase SQL Editor');
+    
     migrationInProgress = false;
-    return true;
+    return false;
   } catch (error) {
     console.error('Auto-migration error:', error);
     migrationInProgress = false;
-    // Don't fail if migration fails - system will use fallback
     return false;
   }
 }

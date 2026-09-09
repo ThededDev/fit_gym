@@ -1,12 +1,8 @@
-import { query, hashPassword, publicUser } from '../_db.js';
+import { supabase, hashPassword, publicUser } from '../_supabase.js';
 import { randomUUID } from 'node:crypto';
-import { ensureDatabaseSchema } from '../_auto-migrate.js';
 
 export async function POST(request) {
   try {
-    // Ensure database schema exists
-    await ensureDatabaseSchema();
-
     const body = await request.text();
     const payload = body ? JSON.parse(body) : {};
     const { name, email, password, role, inviteCode } = payload;
@@ -16,23 +12,25 @@ export async function POST(request) {
     }
 
     // Check if user already exists
-    const existingUser = await query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    );
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
 
-    if (existingUser.rows.length > 0) {
+    if (existingUser) {
       return Response.json({ error: 'Email уже зарегистрирован' }, { status: 409 });
     }
 
     // For coaches, verify invite code if provided
     if (role === 'coach' && inviteCode) {
-      const coachCheck = await query(
-        'SELECT user_id FROM coach_profiles WHERE invite_code = $1',
-        [inviteCode]
-      );
+      const { data: coachCheck } = await supabase
+        .from('coach_profiles')
+        .select('user_id')
+        .eq('invite_code', inviteCode)
+        .single();
       
-      if (coachCheck.rows.length > 0) {
+      if (coachCheck) {
         return Response.json({ error: 'Инвайт код уже используется' }, { status: 400 });
       }
     }
@@ -40,46 +38,46 @@ export async function POST(request) {
     const userId = `${role}-${randomUUID()}`;
     const passwordHash = hashPassword(password);
 
-    // Start transaction
-    const client = await query('BEGIN');
-    
-    try {
-      // Insert user
-      await query(
-        `INSERT INTO users (id, email, password_hash, name, role, locale, created_at)
-         VALUES ($1, $2, $3, $4, $5, 'ru', CURRENT_TIMESTAMP)`,
-        [userId, email, passwordHash, name, role]
-      );
+    // Insert user
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        email,
+        password_hash: passwordHash,
+        name,
+        role,
+        locale: 'ru'
+      })
+      .select()
+      .single();
 
-      // Create profile based on role
-      if (role === 'client') {
-        await query(
-          `INSERT INTO client_profiles (user_id, privacy, created_at)
-           VALUES ($1, '{"progressPhotosVisibleToCoach": true}', CURRENT_TIMESTAMP)`,
-          [userId]
-        );
-      } else if (role === 'coach') {
-        const coachInviteCode = inviteCode || `${name.toUpperCase().slice(0, 4)}${Date.now().toString().slice(-4)}`;
-        await query(
-          `INSERT INTO coach_profiles (user_id, bio, specialties, invite_code, is_verified, created_at)
-           VALUES ($1, '', ARRAY[], $2, false, CURRENT_TIMESTAMP)`,
-          [userId, coachInviteCode]
-        );
-      }
-
-      await query('COMMIT');
-
-      // Get the created user
-      const userResult = await query(
-        'SELECT * FROM users WHERE id = $1',
-        [userId]
-      );
-
-      return Response.json(publicUser(userResult.rows[0]), { status: 201 });
-    } catch (error) {
-      await query('ROLLBACK');
-      throw error;
+    if (userError) {
+      return Response.json({ error: 'Ошибка при создании пользователя' }, { status: 500 });
     }
+
+    // Create profile based on role
+    if (role === 'client') {
+      await supabase
+        .from('client_profiles')
+        .insert({
+          user_id: userId,
+          privacy: { progressPhotosVisibleToCoach: true }
+        });
+    } else if (role === 'coach') {
+      const coachInviteCode = inviteCode || `${name.toUpperCase().slice(0, 4)}${Date.now().toString().slice(-4)}`;
+      await supabase
+        .from('coach_profiles')
+        .insert({
+          user_id: userId,
+          bio: '',
+          specialties: [],
+          invite_code: coachInviteCode,
+          is_verified: false
+        });
+    }
+
+    return Response.json(publicUser(user), { status: 201 });
   } catch (error) {
     console.error('Register error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });

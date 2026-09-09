@@ -3,9 +3,6 @@ import { ensureDatabaseSchema } from '../_auto-migrate.js';
 
 export async function POST(request) {
   try {
-    // Ensure database schema exists
-    await ensureDatabaseSchema();
-
     const body = await request.text();
     const payload = body ? JSON.parse(body) : {};
     const { email, password } = payload;
@@ -13,6 +10,11 @@ export async function POST(request) {
     if (!email || !password) {
       return Response.json({ error: 'Email и пароль обязательны' }, { status: 400 });
     }
+
+    // Try to ensure database schema (non-blocking)
+    ensureDatabaseSchema().catch(err => {
+      console.log('Auto-migration failed, using fallback:', err.message);
+    });
 
     const result = await query(
       'SELECT * FROM users WHERE email = $1',
@@ -32,6 +34,6 @@ export async function POST(request) {
     return Response.json(publicUser(user));
   } catch (error) {
     console.error('Login error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }

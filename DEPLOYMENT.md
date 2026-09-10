@@ -4,8 +4,8 @@
 
 FitGym - это фитнес-приложение с:
 - Frontend: React + Vite + TypeScript
-- Backend: Node.js + Express
-- Database: PostgreSQL / Supabase
+- Backend: Node.js + Supabase SDK
+- Database: Supabase PostgreSQL
 - Styling: Tailwind CSS
 
 ## Подготовка к развертыванию
@@ -21,9 +21,7 @@ FitGym - это фитнес-приложение с:
 
 ### 2. Настройка базы данных
 
-#### Вариант A: Supabase (рекомендуется для TatNet.ru)
-
-1. Создайте проект на [supabase.com](https://supabase.com)
+1. Убедитесь, что проект Supabase создан на [supabase.com](https://supabase.com)
 2. Получите следующие данные из настроек проекта:
    - Project URL
    - anon public key
@@ -32,24 +30,15 @@ FitGym - это фитнес-приложение с:
    - `db/schema.sql` - структура базы данных
    - `db/seed.sql` - тестовые данные
 
-#### Вариант B: PostgreSQL на TatNet.ru
-
-1. Используйте встроенную поддержку Supabase на TatNet.ru
-2. Или настройте внешний PostgreSQL сервер
-3. Обновите строку подключения в переменных окружения
-
 ### 3. Переменные окружения
 
 На TatNet.ru настройте следующие переменные окружения:
 
 ```bash
-# Для Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Supabase SDK
+SUPABASE_URL=https://kptoweyhevaasfdbwbbs.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
-# Для PostgreSQL (если не используете Supabase)
-DATABASE_URL=postgresql://user:password@host:port/database
 
 # Сервер
 PORT=8787
@@ -146,12 +135,12 @@ npm start
 
 - Структура API: сервер запускается на порту 8787
 - Frontend: собранные файлы обслуживаются через Vite
-- Database: используется PostgreSQL через pg или Supabase SDK
-- Аутентификация: реализована через custom JWT (см. `server/auth.mjs`)
+- Database: используется Supabase SDK для работы с PostgreSQL
+- Аутентификация: реализована через custom JWT с Supabase (см. `api/_supabase.js`)
 
 ## Поддержка
 
 При возникновении проблем:
 1. Проверьте логи приложения в панели TatNet.ru
 2. Обратитесь к документации TatNet.ru
-3. Проверьте файлы `SUPABASE_SETUP.md` и `VERCEL_POSTGRES_SETUP.md` для настройки базы данных
+3. Проверьте файлы `SUPABASE_SETUP.md` и `SUPABASE_SDK_SETUP.md` для настройки базы данных

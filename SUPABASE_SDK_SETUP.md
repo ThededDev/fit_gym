@@ -20,13 +20,15 @@
 4. Добавьте следующие переменные:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://kptoweyhevaasfdbwbbs.supabase.co
+SUPABASE_URL=https://kptoweyhevaasfdbwbbs.supabase.co
 SUPABASE_ANON_KEY=ваш_anon_ключ
 SUPABASE_SERVICE_ROLE_KEY=ваш_service_role_ключ
 ```
 
 5. Выберите все окружения: **Production**, **Preview**, **Development**
-6. Нажмите **Save**
+6. Для **SUPABASE_URL** и **SUPABASE_ANON_KEY** установите **visibility: public**
+7. Для **SUPABASE_SERVICE_ROLE_KEY** установите **visibility: secret**
+8. Нажмите **Save**
 
 ### 3. Создайте таблицы в Supabase
 

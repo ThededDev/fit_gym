@@ -1,5 +1,9 @@
-import 'dotenv/config';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import dotenv from 'dotenv';
+
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createSeedData } from './seed.mjs';

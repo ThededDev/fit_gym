@@ -1,5 +1,9 @@
-import 'dotenv/config';
 import { createServer } from 'node:http';
+import dotenv from 'dotenv';
+
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 import { randomUUID } from 'node:crypto';
 import {
   findUserByEmail,

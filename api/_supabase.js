@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import ws from 'ws';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -9,7 +10,11 @@ let useFallback = !supabaseUrl || !supabaseKey;
 
 if (!useFallback) {
   try {
-    supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      realtime: {
+        transport: ws
+      }
+    });
   } catch (e) {
     console.error('Failed to init Supabase client:', e);
     useFallback = true;

@@ -59,7 +59,9 @@ function json(response, status, payload) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    'Cache-Control': 'no-cache'
   };
   response.writeHead(status, headers);
   response.end(status === 204 ? '' : JSON.stringify(payload));
@@ -101,7 +103,14 @@ function serveStatic(response, filePath) {
 async function readBody(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
-  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+  const body = Buffer.concat(chunks).toString('utf8');
+  if (!body) return {};
+  try {
+    return JSON.parse(body);
+  } catch (e) {
+    console.error('Failed to parse JSON body:', body);
+    return {};
+  }
 }
 
 createServer(async (request, response) => {
@@ -109,12 +118,20 @@ createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     const [root, resource, id] = url.pathname.split('/').filter(Boolean);
     
+    // Normalize method (handle case-sensitivity issues)
+    const method = request.method?.toUpperCase() || 'GET';
+    
     // Detailed logging for debugging
     console.log('Request:', {
-      method: request.method,
+      method: method,
       path: url.pathname,
       host: request.headers.host,
-      parsed: { root, resource, id }
+      parsed: { root, resource, id },
+      headers: {
+        'content-type': request.headers['content-type'],
+        'user-agent': request.headers['user-agent'],
+        'referer': request.headers['referer']
+      }
     });
     
     // Serve static files for non-API requests
@@ -124,10 +141,10 @@ createServer(async (request, response) => {
       return;
     }
     
-    if (request.method === 'GET' && resource === 'health') return json(response, 200, { status: 'ok' });
+    if (method === 'GET' && resource === 'health') return json(response, 200, { status: 'ok' });
     
     // Handle CORS preflight requests
-    if (request.method === 'OPTIONS') {
+    if (method === 'OPTIONS') {
       response.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
@@ -138,7 +155,7 @@ createServer(async (request, response) => {
     }
 
     // Auth: login
-    if (request.method === 'POST' && resource === 'auth' && id === 'login') {
+    if (method === 'POST' && resource === 'auth' && id === 'login') {
       const payload = await readBody(request);
       const user = await findUserByEmail(payload.email);
       if (!user) return json(response, 401, { error: 'Неверный email или пароль' });
@@ -147,7 +164,7 @@ createServer(async (request, response) => {
     }
 
     // Auth: register
-    if (request.method === 'POST' && resource === 'auth' && id === 'register') {
+    if (method === 'POST' && resource === 'auth' && id === 'register') {
       const payload = await readBody(request);
       const existing = await findUserByEmail(payload.email);
       if (existing) return json(response, 409, { error: 'Email уже зарегистрирован' });
@@ -196,7 +213,7 @@ createServer(async (request, response) => {
     if (!tableName) return json(response, 404, { error: 'Not found' });
 
     // GET collection / item
-    if (request.method === 'GET') {
+    if (method === 'GET') {
       if (id) {
         const item = await selectById(tableName, id);
         if (!item) return json(response, 404, null);
@@ -236,7 +253,7 @@ createServer(async (request, response) => {
     }
 
     // POST create
-    if (request.method === 'POST') {
+    if (method === 'POST') {
       const payload = await readBody(request);
       const itemId = payload.id ?? `${resource}-${randomUUID()}`;
 
@@ -263,7 +280,7 @@ createServer(async (request, response) => {
     if (!id) return json(response, 400, { error: 'Resource id is required' });
 
     // PATCH update
-    if (request.method === 'PATCH') {
+    if (method === 'PATCH') {
       const payload = await readBody(request);
 
       if (resource === 'clients') {
@@ -296,7 +313,7 @@ createServer(async (request, response) => {
     }
 
     // DELETE
-    if (request.method === 'DELETE') {
+    if (method === 'DELETE') {
       if (resource === 'clients') {
         const success = await deleteRow('users', id);
         return success ? json(response, 204) : json(response, 404, { error: 'Not found' });

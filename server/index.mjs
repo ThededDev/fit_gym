@@ -1,4 +1,7 @@
 import { createServer } from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
 if (process.env.NODE_ENV !== 'production') {
@@ -23,6 +26,9 @@ import {
   useFallback
 } from '../api/_supabase.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const distPath = join(__dirname, '..', 'dist');
+
 const port = Number(process.env.PORT ?? 8787);
 
 const tableMap = {
@@ -42,6 +48,39 @@ function json(response, status, payload) {
   response.end(status === 204 ? '' : JSON.stringify(payload));
 }
 
+function serveStatic(response, filePath) {
+  const fullPath = join(distPath, filePath);
+  if (!existsSync(fullPath)) {
+    // Serve index.html for SPA routing
+    const indexPath = join(distPath, 'index.html');
+    if (existsSync(indexPath)) {
+      const content = readFileSync(indexPath, 'utf-8');
+      response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      response.end(content);
+    } else {
+      response.writeHead(404, { 'Content-Type': 'text/plain' });
+      response.end('Not found');
+    }
+    return;
+  }
+  
+  const content = readFileSync(fullPath);
+  const ext = filePath.split('.').pop();
+  const contentType = {
+    'html': 'text/html',
+    'js': 'application/javascript',
+    'css': 'text/css',
+    'json': 'application/json',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'svg': 'image/svg+xml',
+    'ico': 'image/x-icon'
+  }[ext] || 'application/octet-stream';
+  
+  response.writeHead(200, { 'Content-Type': `${contentType}; charset=utf-8` });
+  response.end(content);
+}
+
 async function readBody(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
@@ -52,7 +91,14 @@ createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
     const [root, resource, id] = url.pathname.split('/').filter(Boolean);
-    if (root !== 'api') return json(response, 404, { error: 'Not found' });
+    
+    // Serve static files for non-API requests
+    if (root !== 'api') {
+      const filePath = url.pathname === '/' ? 'index.html' : url.pathname.substring(1);
+      serveStatic(response, filePath);
+      return;
+    }
+    
     if (request.method === 'GET' && resource === 'health') return json(response, 200, { status: 'ok' });
 
     // Auth: login

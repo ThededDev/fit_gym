@@ -1,6 +1,7 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
 
+// Load env variables for development only
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }

@@ -4,8 +4,13 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
+// Load env variables for development only
 if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
+  const envPath = join(dirname(fileURLToPath(import.meta.url)), '..', '.env');
+  if (existsSync(envPath)) {
+    console.log('Loading .env from:', envPath);
+    dotenv.config({ path: envPath });
+  }
 }
 import { randomUUID } from 'node:crypto';
 import {
@@ -30,6 +35,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const distPath = join(__dirname, '..', 'dist');
 
 const port = Number(process.env.PORT ?? 8787);
+console.log(`Starting server on port ${port}, NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`Environment variables check:`, {
+  SUPABASE_URL: !!process.env.SUPABASE_URL,
+  SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
 
 const tableMap = {
   clients: 'users',
@@ -44,7 +55,13 @@ const tableMap = {
 };
 
 function json(response, status, payload) {
-  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  };
+  response.writeHead(status, headers);
   response.end(status === 204 ? '' : JSON.stringify(payload));
 }
 
@@ -92,6 +109,14 @@ createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     const [root, resource, id] = url.pathname.split('/').filter(Boolean);
     
+    // Detailed logging for debugging
+    console.log('Request:', {
+      method: request.method,
+      path: url.pathname,
+      host: request.headers.host,
+      parsed: { root, resource, id }
+    });
+    
     // Serve static files for non-API requests
     if (root !== 'api') {
       const filePath = url.pathname === '/' ? 'index.html' : url.pathname.substring(1);
@@ -100,6 +125,17 @@ createServer(async (request, response) => {
     }
     
     if (request.method === 'GET' && resource === 'health') return json(response, 200, { status: 'ok' });
+    
+    // Handle CORS preflight requests
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      });
+      response.end();
+      return;
+    }
 
     // Auth: login
     if (request.method === 'POST' && resource === 'auth' && id === 'login') {

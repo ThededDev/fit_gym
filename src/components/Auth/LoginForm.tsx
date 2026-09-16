@@ -75,7 +75,7 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
       client: 'ivan@example.com',
       coach: 'maria@example.com',
     };
-    await handleLogin(demoEmails[role], 'demo123456');
+    await handleLogin(demoEmails[role], '123456');
   };
 
   return (

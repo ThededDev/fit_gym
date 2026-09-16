@@ -1,6 +1,9 @@
 -- Auto-create public.users record when a new user signs up via Supabase Auth
 -- Run this in Supabase SQL Editor
 
+-- 0. Make password_hash nullable (passwords now managed by Supabase Auth)
+ALTER TABLE public.users ALTER COLUMN password_hash DROP NOT NULL;
+
 -- 1. Create function that inserts into public.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
@@ -19,8 +22,6 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'locale', 'ru'),
     NOW()
   );
-
-  -- Also create client_profile or coach_profile based on role
   IF COALESCE(NEW.raw_user_meta_data->>'role', 'client') = 'client' THEN
     INSERT INTO public.client_profiles (user_id, privacy)
     VALUES (NEW.id, '{"progressPhotosVisibleToCoach": true}');

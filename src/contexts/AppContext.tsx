@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { User, ClientProfile, CoachProfile, Theme } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AppState {
   user: User | null;

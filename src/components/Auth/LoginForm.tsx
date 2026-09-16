@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { mockUsers, mockClientProfile, mockCoachProfile } from '../../data/mockData';
-import { apiPost } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
+import { mockClientProfile, mockCoachProfile } from '../../data/mockData';
 import { User } from '../../types';
 
 interface LoginFormProps {
@@ -17,38 +17,65 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (email: string, password: string) => {
     setIsLoading(true);
 
     try {
-      const user = await apiPost<User>('/auth/login', { email, password });
-      dispatch({ type: 'SET_USER', payload: user });
-      
-      if (user.role === 'client') {
-        dispatch({ type: 'SET_CLIENT_PROFILE', payload: mockClientProfile });
-      } else if (user.role === 'coach') {
-        dispatch({ type: 'SET_COACH_PROFILE', payload: mockCoachProfile });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.user) {
+        // Get role from user metadata (set during registration)
+        const role = (data.user.user_metadata?.role || 'client') as User['role'];
+
+        const user: User = {
+          id: data.user.id,
+          email: data.user.email || email,
+          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || '',
+          role,
+          avatarUrl: data.user.user_metadata?.avatar_url,
+          createdAt: data.user.created_at,
+        };
+
+        dispatch({ type: 'SET_USER', payload: user });
+
+        if (role === 'client') {
+          dispatch({ type: 'SET_CLIENT_PROFILE', payload: mockClientProfile });
+        } else if (role === 'coach') {
+          dispatch({ type: 'SET_COACH_PROFILE', payload: mockCoachProfile });
+        }
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Не удалось войти');
+      const msg = error instanceof Error ? error.message : 'Не удалось войти';
+      // Translate common Supabase auth errors
+      const translated = msg.includes('Invalid login credentials')
+        ? 'Неверный email или пароль'
+        : msg.includes('Email not confirmed')
+        ? 'Подтвердите email перед входом'
+        : msg;
+      alert(translated);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleLogin(email, password);
+  };
+
   const handleDemoLogin = async (role: 'client' | 'coach') => {
-    const demoUser = mockUsers.find(u => u.role === role);
-    if (demoUser) {
-      const user = await apiPost<User>('/auth/login', { email: demoUser.email, password: 'demo' });
-      dispatch({ type: 'SET_USER', payload: user });
-      
-      if (user.role === 'client') {
-        dispatch({ type: 'SET_CLIENT_PROFILE', payload: mockClientProfile });
-      } else if (user.role === 'coach') {
-        dispatch({ type: 'SET_COACH_PROFILE', payload: mockCoachProfile });
-      }
-    }
+    const demoEmails: Record<string, string> = {
+      client: 'ivan@example.com',
+      coach: 'maria@example.com',
+    };
+    await handleLogin(demoEmails[role], 'demo123456');
   };
 
   return (

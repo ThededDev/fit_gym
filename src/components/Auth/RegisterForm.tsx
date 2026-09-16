@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Users } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { Role } from '../../types';
-import { apiPost } from '../../lib/api';
 
 interface RegisterFormProps {
   onToggleMode: () => void;
@@ -29,16 +29,41 @@ export default function RegisterForm({ onToggleMode }: RegisterFormProps) {
     }
 
     try {
-      await apiPost('/auth/register', {
-        name: formData.name,
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        role: formData.role
+        options: {
+          data: {
+            name: formData.name,
+            role: formData.role,
+          },
+        },
       });
-      alert('Регистрация успешна! Войдите в систему.');
-      onToggleMode();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.user) {
+        // If email confirmation is disabled, user is logged in immediately
+        // If email confirmation is required, inform the user
+        if (data.session) {
+          // Auto-confirmed — user is logged in
+          alert('Регистрация успешна!');
+        } else {
+          // Email confirmation required
+          alert('Регистрация успешна! Проверьте email для подтверждения.');
+        }
+        onToggleMode();
+      }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Не удалось зарегистрироваться');
+      const msg = error instanceof Error ? error.message : 'Не удалось зарегистрироваться';
+      const translated = msg.includes('User already registered')
+        ? 'Этот email уже зарегистрирован'
+        : msg.includes('Password should be')
+        ? 'Пароль слишком простой (минимум 6 символов)'
+        : msg;
+      alert(translated);
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +121,7 @@ export default function RegisterForm({ onToggleMode }: RegisterFormProps) {
                     </span>
                   </div>
                 </label>
-                
+
                 <label className="relative">
                   <input
                     type="radio"

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
+import {
   Home, Calendar, Dumbbell, Apple, Target,
   Users, MessageSquare, LogOut, Moon, Sun
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { supabase } from '../../lib/supabase';
 
 const clientNavItems = [
   { path: '/dashboard', icon: Home, label: 'Главная' },
@@ -36,7 +37,8 @@ export default function Sidebar() {
     dispatch({ type: 'SET_THEME', payload: state.theme === 'light' ? 'dark' : 'light' });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     dispatch({ type: 'LOGOUT' });
   };
 

@@ -1,19 +1,30 @@
 import { findUserByEmail, insertUser, insertClientProfile, insertCoachProfile, hashPassword, publicUser } from '../_supabase.js';
+import { corsJson, handlePreflight } from '../_cors.js';
 import { randomUUID } from 'node:crypto';
 
+export async function OPTIONS(request) {
+  return handlePreflight(request);
+}
+
 export async function POST(request) {
+  console.log('[AUTH] POST /api/auth/register', {
+    method: request.method,
+    url: request.url,
+    contentType: request.headers.get('content-type'),
+  });
+
   try {
     const body = await request.text();
     const payload = body ? JSON.parse(body) : {};
     const { name, email, password, role, inviteCode } = payload;
 
     if (!name || !email || !password || !role) {
-      return Response.json({ error: 'Все поля обязательны' }, { status: 400 });
+      return corsJson({ error: 'Все поля обязательны' }, { status: 400 });
     }
 
     const existing = await findUserByEmail(email);
     if (existing) {
-      return Response.json({ error: 'Email уже зарегистрирован' }, { status: 409 });
+      return corsJson({ error: 'Email уже зарегистрирован' }, { status: 409 });
     }
 
     const userId = `${role}-${randomUUID()}`;
@@ -46,9 +57,10 @@ export async function POST(request) {
       });
     }
 
-    return Response.json(publicUser(user), { status: 201 });
+    console.log('[AUTH] Register success:', email, 'role:', role);
+    return corsJson(publicUser(user), { status: 201 });
   } catch (error) {
-    console.error('Register error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[AUTH] Register error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }

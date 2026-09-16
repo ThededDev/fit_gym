@@ -2,11 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import ws from 'ws';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+let supabaseUrl = process.env.SUPABASE_URL || '';
+let supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+// Strip trailing slashes and whitespace from URL
+supabaseUrl = supabaseUrl.trim().replace(/\/+$/, '');
 
 let supabase = null;
 let useFallback = !supabaseUrl || !supabaseKey;
+
+console.log('[Supabase] Init:', {
+  url: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : '(empty)',
+  hasKey: !!supabaseKey,
+  mode: useFallback ? 'FALLBACK (in-memory)' : 'SUPABASE'
+});
 
 if (!useFallback) {
   try {
@@ -15,8 +24,9 @@ if (!useFallback) {
         transport: ws
       }
     });
+    console.log('[Supabase] Client created successfully');
   } catch (e) {
-    console.error('Failed to init Supabase client:', e);
+    console.error('[Supabase] Failed to init client:', e.message);
     useFallback = true;
   }
 }
@@ -82,7 +92,10 @@ export async function findUserByEmail(email) {
     return user || null;
   }
   const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
-  if (error) { console.error('findUserByEmail error:', error); return null; }
+  if (error) {
+    console.error('[Supabase] findUserByEmail error:', error.code, error.message);
+    return null;
+  }
   return data;
 }
 
@@ -92,7 +105,7 @@ export async function findUserById(id) {
     return user || null;
   }
   const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
-  if (error) { console.error('findUserById error:', error); return null; }
+  if (error) { console.error('[Supabase] findUserById error:', error.code, error.message); return null; }
   return data;
 }
 
@@ -102,7 +115,7 @@ export async function insertUser(user) {
     return user;
   }
   const { data, error } = await supabase.from('users').insert(user).select().single();
-  if (error) { console.error('insertUser error:', error); throw new Error(error.message); }
+  if (error) { console.error('[Supabase] insertUser error:', error.code, error.message); throw new Error(error.message); }
   return data;
 }
 
@@ -114,7 +127,7 @@ export async function updateUser(id, updates) {
     return getFallbackUsers()[idx];
   }
   const { data, error } = await supabase.from('users').update(updates).eq('id', id).select().single();
-  if (error) { console.error('updateUser error:', error); return null; }
+  if (error) { console.error('[Supabase] updateUser error:', error.code, error.message); return null; }
   return data;
 }
 

@@ -1,16 +1,21 @@
 import { tableMap, selectAll, selectById, insertRow, updateRow, deleteRow, publicUser } from './_supabase.js';
+import { corsJson, handlePreflight } from './_cors.js';
+
+export async function OPTIONS(request) {
+  return handlePreflight(request);
+}
 
 export async function GET(request, { params }) {
   try {
     const [resource, id] = params.path;
 
     if (resource === 'health') {
-      return Response.json({ status: 'ok' });
+      return corsJson({ status: 'ok' });
     }
 
     const tableName = tableMap[resource];
     if (!tableName) {
-      return Response.json({ error: 'Not found' }, { status: 404 });
+      return corsJson({ error: 'Not found' }, { status: 404 });
     }
 
     const url = new URL(request.url);
@@ -20,12 +25,12 @@ export async function GET(request, { params }) {
       if (resource === 'clients') {
         const user = await selectById('users', id);
         if (!user || user.role !== 'client') {
-          return Response.json({ error: 'Not found' }, { status: 404 });
+          return corsJson({ error: 'Not found' }, { status: 404 });
         }
-        return Response.json(publicUser(user));
+        return corsJson(publicUser(user));
       }
       const item = await selectById(tableName, id);
-      return item ? Response.json(item) : Response.json({ error: 'Not found' }, { status: 404 });
+      return item ? corsJson(item) : corsJson({ error: 'Not found' }, { status: 404 });
     }
 
     if (resource === 'clients') {
@@ -36,10 +41,10 @@ export async function GET(request, { params }) {
         const userIds = profiles.map(p => p.user_id);
         const allClients = await selectAll('users', { role: 'client' });
         const filtered = allClients.filter(u => userIds.includes(u.id));
-        return Response.json(filtered.map(publicUser));
+        return corsJson(filtered.map(publicUser));
       }
       const rows = await selectAll('users', filters);
-      return Response.json(rows.map(publicUser));
+      return corsJson(rows.map(publicUser));
     }
 
     const filters = {};
@@ -47,19 +52,20 @@ export async function GET(request, { params }) {
       if (value) filters[key] = value;
     }
     const rows = await selectAll(tableName, filters);
-    return Response.json(rows);
+    return corsJson(rows);
   } catch (error) {
-    console.error('GET error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[API] GET error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(request, { params }) {
+  console.log('[API] POST /api/' + params.path.join('/'));
   try {
     const [resource] = params.path;
     const tableName = tableMap[resource];
     if (!tableName) {
-      return Response.json({ error: 'Not found' }, { status: 404 });
+      return corsJson({ error: 'Not found' }, { status: 404 });
     }
 
     const body = await request.text();
@@ -75,10 +81,11 @@ export async function POST(request, { params }) {
     }
 
     const row = await insertRow(tableName, payload);
-    return Response.json(resource === 'clients' ? publicUser(row) : row, { status: 201 });
+    console.log('[API] POST success:', resource, payload.id);
+    return corsJson(resource === 'clients' ? publicUser(row) : row, { status: 201 });
   } catch (error) {
-    console.error('POST error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[API] POST error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -86,12 +93,12 @@ export async function PATCH(request, { params }) {
   try {
     const [resource, id] = params.path;
     if (!id) {
-      return Response.json({ error: 'Resource id is required' }, { status: 400 });
+      return corsJson({ error: 'Resource id is required' }, { status: 400 });
     }
 
     const tableName = tableMap[resource];
     if (!tableName) {
-      return Response.json({ error: 'Not found' }, { status: 404 });
+      return corsJson({ error: 'Not found' }, { status: 404 });
     }
 
     const body = await request.text();
@@ -99,10 +106,10 @@ export async function PATCH(request, { params }) {
     delete payload.id;
 
     const row = await updateRow(tableName, id, payload);
-    return row ? Response.json(resource === 'clients' ? publicUser(row) : row) : Response.json({ error: 'Not found' }, { status: 404 });
+    return row ? corsJson(resource === 'clients' ? publicUser(row) : row) : corsJson({ error: 'Not found' }, { status: 404 });
   } catch (error) {
-    console.error('PATCH error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[API] PATCH error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -110,18 +117,18 @@ export async function DELETE(request, { params }) {
   try {
     const [resource, id] = params.path;
     if (!id) {
-      return Response.json({ error: 'Resource id is required' }, { status: 400 });
+      return corsJson({ error: 'Resource id is required' }, { status: 400 });
     }
 
     const tableName = tableMap[resource];
     if (!tableName) {
-      return Response.json({ error: 'Not found' }, { status: 404 });
+      return corsJson({ error: 'Not found' }, { status: 404 });
     }
 
     const ok = await deleteRow(tableName, id);
-    return ok ? Response.json(null, { status: 204 }) : Response.json({ error: 'Not found' }, { status: 404 });
+    return ok ? corsJson(null, { status: 204 }) : corsJson({ error: 'Not found' }, { status: 404 });
   } catch (error) {
-    console.error('DELETE error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[API] DELETE error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }

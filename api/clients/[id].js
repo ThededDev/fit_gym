@@ -1,16 +1,21 @@
 import { findUserById, updateUser, publicUser } from '../../_supabase.js';
+import { corsJson, handlePreflight } from '../../_cors.js';
+
+export async function OPTIONS(request) {
+  return handlePreflight(request);
+}
 
 export async function GET(request, { params }) {
   try {
     const clientId = params.id;
     const user = await findUserById(clientId);
     if (!user || user.role !== 'client') {
-      return Response.json({ error: 'Client not found' }, { status: 404 });
+      return corsJson({ error: 'Client not found' }, { status: 404 });
     }
-    return Response.json(publicUser(user));
+    return corsJson(publicUser(user));
   } catch (error) {
-    console.error('Get client error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[CLIENT] GET error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -22,7 +27,7 @@ export async function PATCH(request, { params }) {
 
     const user = await findUserById(clientId);
     if (!user || user.role !== 'client') {
-      return Response.json({ error: 'Client not found' }, { status: 404 });
+      return corsJson({ error: 'Client not found' }, { status: 404 });
     }
 
     const allowedFields = ['name', 'phone', 'avatar_url'];
@@ -32,13 +37,13 @@ export async function PATCH(request, { params }) {
     }
 
     if (Object.keys(updates).length === 0) {
-      return Response.json({ error: 'No valid fields to update' }, { status: 400 });
+      return corsJson({ error: 'No valid fields to update' }, { status: 400 });
     }
 
     const updated = await updateUser(clientId, updates);
-    return updated ? Response.json(publicUser(updated)) : Response.json({ error: 'Not found' }, { status: 404 });
+    return updated ? corsJson(publicUser(updated)) : corsJson({ error: 'Not found' }, { status: 404 });
   } catch (error) {
-    console.error('Update client error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[CLIENT] PATCH error:', error.message, error.stack);
+    return corsJson({ error: 'Internal server error' }, { status: 500 });
   }
 }

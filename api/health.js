@@ -1,10 +1,17 @@
 import { checkHealth } from './_supabase.js';
+import { corsJson, handlePreflight } from './_cors.js';
+
+export async function OPTIONS(request) {
+  return handlePreflight(request);
+}
 
 export async function GET() {
   try {
     const db = await checkHealth();
-    return Response.json({ status: 'ok', database: db });
+    console.log('[HEALTH]', db);
+    return corsJson({ status: 'ok', database: db });
   } catch (error) {
-    return Response.json({ status: 'error', error: error.message }, { status: 500 });
+    console.error('[HEALTH] Error:', error.message);
+    return corsJson({ status: 'error', error: error.message }, { status: 500 });
   }
 }

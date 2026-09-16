@@ -26,7 +26,8 @@ dist-ssr
 # Environment variables
 .env
 .env.local
-.env.production
+.env.production.local
+# .env.production is NOT ignored — contains VITE_ keys needed at build time
 
 # Server data
 server/data/db.json

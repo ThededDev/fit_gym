@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { User, ClientProfile, CoachProfile, Theme } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -23,7 +23,7 @@ const initialState: AppState = {
   clientProfile: null,
   coachProfile: null,
   theme: 'light',
-  isLoading: false,
+  isLoading: true,
 };
 
 const AppContext = createContext<{
@@ -44,14 +44,47 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'LOGOUT':
-      return { ...initialState, theme: state.theme };
+      return { ...initialState, theme: state.theme, isLoading: false };
     default:
       return state;
   }
 }
 
+function authUserToAppUser(session: { user: { id: string; email?: string; created_at: string; user_metadata?: Record<string, string> } }): User {
+  const { user } = session;
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+    role: (user.user_metadata?.role || 'client') as User['role'],
+    avatarUrl: user.user_metadata?.avatar_url,
+    createdAt: user.created_at,
+  };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  useEffect(() => {
+    // Restore session from Supabase on page load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        dispatch({ type: 'SET_USER', payload: authUserToAppUser(session) });
+      }
+      dispatch({ type: 'SET_LOADING', payload: false });
+    });
+
+    // Listen for auth state changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        dispatch({ type: 'SET_USER', payload: authUserToAppUser(session) });
+      } else {
+        dispatch({ type: 'LOGOUT' });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
